@@ -2,6 +2,7 @@ const MODULE_ID = "inspiration-points";
 const FLAG_SCOPE = MODULE_ID;
 const STATE_FLAG = "state";
 const TAB_NAME = "ipm-players";
+const APPLICATION_ROLL_DELAY_MS = 950;
 
 const runtime = {
   sidebarElement: null,
@@ -373,8 +374,9 @@ async function spendInspiration(actor, cost, mode) {
       rerolled = promoted;
     }
 
-    await ChatMessage.create(await buildRerollMessageData(actor, sourceMessage, rerolled, mode));
     await setActorState(actor, state.points - cost, makeEvent(mode, cost));
+    await wait(APPLICATION_ROLL_DELAY_MS);
+    await ChatMessage.create(await buildRerollMessageData(actor, sourceMessage, rerolled, mode));
 
     const key = mode === "critical" ? "IPM.Notification.CriticalSpent" : "IPM.Notification.Spent";
     ui.notifications.info(game.i18n.format(key, { actor: actor.name }));
@@ -433,26 +435,22 @@ function playCardAnimation(card, type) {
   const host = card.querySelector("[data-ipm-fx-host='true']");
   if (!host) return;
 
-  const layer = document.createElement("div");
-  if (type === "gain") {
-    layer.className = "ipm-fx-burst";
-  } else if (type === "critical") {
-    layer.className = "ipm-fx-crit";
-    const mark = document.createElement("div");
-    mark.className = "ipm-fx-crit-mark";
-    mark.textContent = "CRIT";
-    layer.appendChild(mark);
-  } else {
-    layer.className = "ipm-fx-rewind";
-    const clock = document.createElement("div");
-    clock.className = "ipm-fx-clock";
-    clock.innerHTML = `<i class="fas fa-hourglass-half"></i>`;
-    layer.appendChild(clock);
+  if (type !== "gain") {
+    card.classList.remove("is-animating-gain", "is-animating-spend", "is-animating-crit");
+    card.classList.add(type === "critical" ? "is-animating-crit" : "is-animating-spend");
+
+    window.setTimeout(() => {
+      card.classList.remove("is-animating-gain", "is-animating-spend", "is-animating-crit");
+    }, 3100);
+    return;
   }
+
+  const layer = document.createElement("div");
+  layer.className = "ipm-fx-burst";
 
   host.appendChild(layer);
   card.classList.remove("is-animating-gain", "is-animating-spend", "is-animating-crit");
-  card.classList.add(type === "gain" ? "is-animating-gain" : type === "critical" ? "is-animating-crit" : "is-animating-spend");
+  card.classList.add("is-animating-gain");
 
   window.setTimeout(() => {
     layer.remove();
@@ -463,8 +461,9 @@ function playCardAnimation(card, type) {
 function playGlobalAnimation(type) {
   const overlay = document.createElement("div");
   overlay.className = `ipm-screen-fx is-${type === "gain" ? "gain" : type === "critical" ? "crit" : "spend"}`;
+  if (type !== "gain") overlay.appendChild(buildScreenTimeSweep(type));
   document.body.appendChild(overlay);
-  window.setTimeout(() => overlay.remove(), 1100);
+  window.setTimeout(() => overlay.remove(), type === "gain" ? 1100 : 3200);
 }
 
 function getTrackedActors() {
@@ -577,6 +576,118 @@ function forceCriticalResult(roll) {
 
 function stripInspirationNotes(content) {
   return String(content ?? "").replace(/<div class="ipm-chat-note">[\s\S]*?<\/div>/g, "").trim();
+}
+
+function wait(ms) {
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
+
+function buildTimeRing(kind) {
+  const ring = document.createElement("div");
+  ring.className = `ipm-fx-time-ring is-${kind}`;
+  return ring;
+}
+
+function buildTimeGear(side) {
+  const gear = document.createElement("div");
+  gear.className = `ipm-fx-time-gear is-${side}`;
+  gear.innerHTML = `<i class="fas fa-cog"></i>`;
+  return gear;
+}
+
+function buildTimeTrail() {
+  const trail = document.createElement("div");
+  trail.className = "ipm-fx-time-trail";
+  return trail;
+}
+
+function buildTimeGlyphs(kind) {
+  const glyphs = document.createElement("div");
+  glyphs.className = `ipm-fx-time-glyphs is-${kind}`;
+  glyphs.innerHTML = `
+    <span>XII</span>
+    <span>IX</span>
+    <span>VI</span>
+    <span>III</span>
+  `;
+  return glyphs;
+}
+
+function buildTimeParticles(kind) {
+  const particles = document.createElement("div");
+  particles.className = `ipm-fx-time-particles is-${kind}`;
+  for (let index = 0; index < 12; index += 1) {
+    const particle = document.createElement("span");
+    particle.style.setProperty("--ipm-particle-index", String(index));
+    particles.appendChild(particle);
+  }
+  return particles;
+}
+
+function buildScreenTimeSweep(type) {
+  const sweep = document.createElement("div");
+  sweep.className = `ipm-screen-time-sweep is-${type === "critical" ? "crit" : "rewind"}`;
+  if (type === "critical") {
+    const mark = document.createElement("div");
+    mark.className = "ipm-screen-crit-mark";
+    mark.textContent = "CRIT";
+    sweep.appendChild(mark);
+    sweep.appendChild(buildScreenTimeGlyphs());
+  } else {
+    const clock = document.createElement("div");
+    clock.className = "ipm-screen-clock";
+    clock.innerHTML = `<i class="fas fa-hourglass-half"></i>`;
+    sweep.appendChild(clock);
+    sweep.appendChild(buildScreenTimeGears());
+  }
+
+  sweep.appendChild(buildScreenTimeRings(type));
+  sweep.appendChild(buildScreenTimeParticles(type));
+  return sweep;
+}
+
+function buildScreenTimeRings(type) {
+  const wrapper = document.createElement("div");
+  wrapper.className = `ipm-screen-time-rings is-${type === "critical" ? "crit" : "rewind"}`;
+  wrapper.innerHTML = `
+    <div class="ipm-screen-time-ring is-outer"></div>
+    <div class="ipm-screen-time-ring is-middle"></div>
+    <div class="ipm-screen-time-ring is-inner"></div>
+  `;
+  return wrapper;
+}
+
+function buildScreenTimeParticles(type) {
+  const particles = document.createElement("div");
+  particles.className = `ipm-screen-time-particles is-${type === "critical" ? "crit" : "rewind"}`;
+  for (let index = 0; index < 18; index += 1) {
+    const particle = document.createElement("span");
+    particle.style.setProperty("--ipm-screen-particle-index", String(index));
+    particles.appendChild(particle);
+  }
+  return particles;
+}
+
+function buildScreenTimeGlyphs() {
+  const glyphs = document.createElement("div");
+  glyphs.className = "ipm-screen-time-glyphs";
+  glyphs.innerHTML = `
+    <span>XII</span>
+    <span>IX</span>
+    <span>VI</span>
+    <span>III</span>
+  `;
+  return glyphs;
+}
+
+function buildScreenTimeGears() {
+  const gears = document.createElement("div");
+  gears.className = "ipm-screen-time-gears";
+  gears.innerHTML = `
+    <div class="ipm-screen-time-gear is-left"><i class="fas fa-cog"></i></div>
+    <div class="ipm-screen-time-gear is-right"><i class="fas fa-cog"></i></div>
+  `;
+  return gears;
 }
 
 function getSidebarElement() {
