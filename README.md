@@ -1,7 +1,10 @@
 # Inspiration Points
 
-#Example:
+**#Example:**
+# Master view
 <img width="382" height="1317" alt="image" src="https://github.com/user-attachments/assets/30af4a32-1a83-4e8f-9856-7875eb755cd8" />
+
+# Player view
 <img width="306" height="205" alt="image" src="https://github.com/user-attachments/assets/9f64db31-b138-45c4-b68c-3cb6b9fb08fb" />
 
 
