@@ -1,0 +1,43 @@
+{
+  "id": "inspiration-points",
+  "title": "Inspiration Points",
+  "description": "Tracks inspiration points for player characters in the Combat Tracker with GM rewards, rerolls, and critical inspiration spends.",
+  "version": "0.1.0",
+  "authors": [
+    {
+      "name": "Anthony Whitebeard"
+    }
+  ],
+  "compatibility": {
+    "minimum": "14",
+    "verified": "14"
+  },
+  "relationships": {
+    "systems": [
+      {
+        "id": "dnd5e",
+        "type": "system"
+      }
+    ]
+  },
+  "esmodules": [
+    "scripts/inspiration-points.js"
+  ],
+  "styles": [
+    "styles/inspiration-points.css"
+  ],
+  "languages": [
+    {
+      "lang": "en",
+      "name": "English",
+      "path": "lang/en.json"
+    },
+    {
+      "lang": "ru",
+      "name": "Русский",
+      "path": "lang/ru.json"
+    }
+  ],
+  "readme": "README.md",
+  "license": "LICENSE"
+}
